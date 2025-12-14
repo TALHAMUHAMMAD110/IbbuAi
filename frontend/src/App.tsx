@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import DataTable from "./components/DataTable";
 import type { ColumnDef } from "@tanstack/react-table";
+import { Button } from "antd";
 
 interface RowData {
   [key: string]: any;
@@ -10,9 +11,10 @@ interface RowData {
 function App() {
   const [data, setData] = useState<RowData[]>([]);
   const [columns, setColumns] = useState<ColumnDef<RowData>[]>([]);
-  const [page, setPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const [totalRows, setTotalRows] = useState(0);
-  const pageSize = 20;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pageSize = 5;
 
   const fetchData = async (pageNum: number) => {
     try {
@@ -37,8 +39,8 @@ function App() {
   };
 
   useEffect(() => {
-    fetchData(page);
-  }, [page]);
+    fetchData(currentPage);
+  }, [currentPage]);
 
   const uploadFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -49,39 +51,74 @@ function App() {
 
     try {
       await axios.post("http://localhost:8000/upload", formData);
+      setCurrentPage(1);
       fetchData(1);
-      setPage(1);
     } catch (error) {
       console.error(error);
     }
   };
 
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">AI MS Data Viewer</h1>
+    <div
+      style={{
+        width: "100%",
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        padding: 0,
+        margin: 0,
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          textAlign: "center",
+          padding: "20px 24px",
+          borderBottom: "1px solid #f0f0f0",
+        }}
+      >
+        <h1 className="text-2xl font-bold" style={{ margin: "0 0 8px 0" }}>
+          ibbu bhAlya
+        </h1>
+        <p style={{ margin: 0, color: "#666" }}>
+          your report generation assistant powered by AI
+        </p>
+      </div>
 
-      <input type="file" onChange={uploadFile} className="mb-4" />
+      {/* Upload Button */}
+      <div
+        style={{
+          padding: "16px 24px",
+          borderBottom: "1px solid #f0f0f0",
+          display: "flex",
+          justifyContent: "flex-end",
+        }}
+      >
+        <Button type="primary" size="large" onClick={handleButtonClick}>
+          Upload File
+        </Button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          onChange={uploadFile}
+          style={{ display: "none" }}
+        />
+      </div>
 
-      <DataTable data={data} columns={columns} />
-
-      <div className="mt-4 flex justify-center items-center space-x-4">
-        <button
-          disabled={page === 1}
-          onClick={() => setPage(page - 1)}
-          className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
-        >
-          Previous
-        </button>
-        <span>
-          Page {page} / {Math.ceil(totalRows / pageSize)}
-        </span>
-        <button
-          disabled={page === Math.ceil(totalRows / pageSize)}
-          onClick={() => setPage(page + 1)}
-          className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
-        >
-          Next
-        </button>
+      {/* Table Container - Takes remaining space */}
+      <div style={{ flex: 1, overflow: "auto", width: "100%" }}>
+        <DataTable
+          data={data}
+          columns={columns}
+          total={totalRows}
+          pageSize={pageSize}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
       </div>
     </div>
   );
